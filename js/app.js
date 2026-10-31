@@ -152,7 +152,8 @@ function introStart(){
   let h=47, bars='';
   for(let i=0;i<30;i++){ h=(h*1103515245+12345)&0x7fffffff; const w=1+(h%4); bars+=`<i style="width:${w}px;animation-delay:${(i*16)}ms;${i%7===3?'height:70%;align-self:center':''}"></i>`; }
   $('#inCode').innerHTML=bars;
-  $('#inWord').innerHTML=[...'BAKHUR'].map((c,i)=>`<span style="animation-delay:${.55+i*.07}s">${c}</span>`).join('');
+  let nm='BAKHUR'; try{ nm=localStorage.getItem('bakhur_name')||DB.store().name||nm; }catch(e){}
+  $('#inWord').innerHTML=[...nm.slice(0,12)].map((c,i)=>`<span style="animation-delay:${.55+i*.07}s">${c}</span>`).join('');
   setTimeout(()=>{ if(!introDone) el.classList.add('open'); },1850);
   setTimeout(()=>introEnd(),2250);
   setTimeout(()=>{ if(!introDone) introEnd(); },4000);
@@ -185,6 +186,28 @@ function toggleTheme(){
     $('meta[name=theme-color]').setAttribute('content',t==='light'?'#F5F6F8':'#0E1120'); });
 }
 
+/* ====== ТЕКСТЫ И ВИД САЙТА (меняются в админке, вкладка «Сайт») ======
+   Каждый текст на странице помечен data-t. Если владелец его не менял, остаётся стандартный из разметки. */
+const DEFAULT_TEXTS = {};
+$$('[data-t]').forEach(el=>{ const k=el.dataset.t; if(!(k in DEFAULT_TEXTS)) DEFAULT_TEXTS[k]=el.textContent.trim(); });
+const ACCENTS = {
+  blue:{ name:'Синий', l:['#2340FF','#1A35E8'], d:['#4D66FF','#8C9CFF'] },
+  emerald:{ name:'Изумруд', l:['#0B8F63','#08744F'], d:['#22B97F','#5FE0AE'] },
+  coral:{ name:'Коралл', l:['#E5382E','#C42A21'], d:['#FF6457','#FF9A90'] },
+  violet:{ name:'Фиолетовый', l:['#7436E8','#6024CF'], d:['#9C6BFF','#C3A6FF'] },
+  gold:{ name:'Золото', l:['#B07A0E','#8E6205'], d:['#E0A93A','#F2C46A'] }
+};
+const shopName = () => (STORE.name||'').trim() || 'BAKHUR';
+const textOf = k => { const t=(STORE.texts||{})[k]; return (t&&String(t).trim()) || String(DEFAULT_TEXTS[k]||'').replace(/BAKHUR/g,shopName()); };
+function applySite(){
+  $$('[data-t]').forEach(el=>{ el.textContent = el.dataset.t==='name' ? shopName() : textOf(el.dataset.t); });
+  document.title = shopName()+': парфюмерия'+(STORE.city?' в '+(STORE.city==='Грозный'?'Грозном':STORE.city):'');
+  const a=ACCENTS[STORE.accent]||ACCENTS.blue;
+  let st=$('#accentCss'); if(!st){ st=document.createElement('style'); st.id='accentCss'; document.head.appendChild(st); }
+  st.textContent=`:root{--red:${a.l[0]};--red-tx:${a.l[1]}}:root[data-theme="dark"]{--red:${a.d[0]};--red-tx:${a.d[1]}}`;
+  try{ localStorage.setItem('bakhur_name',shopName()); }catch(e){}
+}
+
 /* ====== ГЛАВНАЯ ====== */
 function renderHero(){
   $('#heroTitle').textContent=STORE.heroTitle||DEFAULT_STORE.heroTitle;
@@ -202,8 +225,8 @@ function renderHero(){
   av.innerHTML = STORE.aboutImg ? `<img src="${esc(STORE.aboutImg)}" alt="" loading="lazy">` : (ap?visual(ap,0):'');
   if(ap) av.style.setProperty('--tint',pastel(ap));
   /* магазин на Wildberries: кнопка в блоке о магазине, строка в оформлении заказа, ссылка в подвале */
-  const wb=wbUrl(); ['#wbLink','#wbOrderLink'].forEach(sel=>{ const a=$(sel); if(a) a.href=wb||'#'; });
-  $('#wbLink').hidden=!wb; $('#wbOrder').hidden=!wb;
+  const wb=wbUrl(); ['#wbTop','#wbOrderLink'].forEach(sel=>{ const a=$(sel); if(a) a.href=wb||'#'; });
+  $('#wbTop').hidden=!wb; $('#wbOrder').hidden=!wb;
   const d=STORE.delivery||''; $('#deliveryShort').textContent = d.length>140 ? d.slice(0,d.indexOf('.',60)+1||140) : d;
 }
 let railMode='hit';
@@ -615,7 +638,7 @@ function observeReveal(){
   setTimeout(()=>$$('#top .rv').forEach(e=>e.classList.add('in')), introDone?60:1900);
 }
 
-function reloadAll(){ loadData(); renderHero(); renderRail(); renderMatchGrid(); renderFamilies(); renderShop(); renderFooter(); renderDrawer(); updateCounts(); if($('#pview').classList.contains('open')) renderProduct(true); if(typeof updateDraftUI==='function') updateDraftUI(); }
+function reloadAll(){ loadData(); applySite(); renderHero(); renderRail(); renderMatchGrid(); renderFamilies(); renderShop(); renderFooter(); renderDrawer(); updateCounts(); if($('#pview').classList.contains('open')) renderProduct(true); if(typeof updateDraftUI==='function') updateDraftUI(); }
 
 /* ====== СОБЫТИЯ ====== */
 $('#railTabs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; railMode=b.dataset.r; $$('#railTabs button').forEach(x=>x.classList.toggle('on',x===b)); renderRail(); });

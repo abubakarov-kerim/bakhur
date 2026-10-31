@@ -29,7 +29,7 @@ function logoutAdmin(){ try{ sessionStorage.removeItem('bakhur_authed'); }catch(
 let adminTab='products';
 function openAdmin(){ if(!isAdmin()){ openAdminGate(); return; } $('#adminPanel').classList.add('open'); syncLock(); admTab(adminTab); }
 function closeAdmin(){ $('#adminPanel').classList.remove('open'); if(location.hash==='#admin') history.replaceState(null,'',location.pathname+location.search); syncLock(); }
-function admTab(t){ adminTab=t; $$('#admTabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t)); ({products:admProducts,store:admStore,access:admAccess,data:admData}[t]||admProducts)(); $('#admBody').scrollTop=0; updateDraftUI(); }
+function admTab(t){ adminTab=t; $$('#admTabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t)); ({products:admProducts,site:admSite,contacts:admContacts,access:admAccess,data:admData}[t]||admProducts)(); $('#admBody').scrollTop=0; updateDraftUI(); }
 $('#admTabs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) admTab(b.dataset.tab); });
 
 /* ----- ароматы: список ----- */
@@ -173,39 +173,78 @@ function pickImg(input,done,max,cut){
   r.readAsDataURL(file);
 }
 
-/* ----- магазин ----- */
-let STORE_IMG={};
-function admStore(){
-  const s=DB.store(); STORE_IMG={heroImg:s.heroImg||'',aboutImg:s.aboutImg||''};
+/* ----- страница «Сайт»: все тексты, фото, название и цвет ----- 
+   Пустое поле = стандартный текст (он виден серым внутри поля). */
+const SITE_GROUPS=[
+  { id:'look', title:'Название и цвет', hint:'Название видно в шапке, во вступлении, в подвале и в тексте заказа.', fields:[['name','Название магазина','store']] },
+  { id:'intro', title:'Вступление', hint:'Подпись под названием на заставке при входе на сайт.', fields:[['introSub1','Слово слева'],['introSub2','Слово справа']] },
+  { id:'hero', title:'Первый экран', hint:'Заголовок лучше до 6 слов, подзаголовок до 20 слов.', fields:[['heroTitle','Заголовок','store'],['heroSub','Подзаголовок','store','area'],['heroBtn1','Кнопка 1 (открывает каталог)'],['heroBtn2','Кнопка 2 (открывает подбор)'],['heroImg','Фото первого экрана (без фото: флакон Creed из каталога)','img']] },
+  { id:'strip', title:'Три плашки под первым экраном', fields:[['s1t','Плашка 1: заголовок'],['s1d','Плашка 1: текст'],['s2t','Плашка 2: заголовок'],['s2d','Плашка 2: текст'],['s3t','Плашка 3: заголовок'],['s3d','Плашка 3: текст']] },
+  { id:'blocks', title:'Разделы главной', fields:[['picksTitle','Лента хитов: заголовок'],['matchEyebrow','Подбор: надпись над заголовком'],['matchTitle','Подбор: заголовок'],['matchText','Подбор: текст','','area'],['matchBtn','Подбор: кнопка'],['famTitle','Семейства: заголовок'],['famLead','Семейства: текст','','area'],['catTitle','Каталог: заголовок']] },
+  { id:'about', title:'О магазине', fields:[['aboutTitle','Заголовок'],['ownerNote','Текст о магазине','store','area'],['ownerName','Подпись (имя)','store'],['ownerRole','Под именем'],['aboutImg','Фото (без фото: флакон из каталога)','img'],['f1t','Пункт 1: заголовок'],['f1d','Пункт 1: текст','','area'],['f2t','Пункт 2: заголовок'],['f2d','Пункт 2: текст','','area'],['f3t','Пункт 3: заголовок (текст берётся из «Доставки» во вкладке «Контакты»)']] },
+  { id:'footer', title:'Подвал', fields:[['ftrTag','Подпись под названием']] }
+];
+let SITE_ED=null;
+function admSite(){
+  const s=DB.store(); SITE_ED={ texts:Object.assign({},s.texts||{}), accent:ACCENTS[s.accent]?s.accent:'blue', heroImg:s.heroImg||'', aboutImg:s.aboutImg||'' };
+  const fld=([k,l,src,kind])=>{
+    if(kind==='img'||src==='img') return `<div class="fld"><span class="lbl">${esc(l)}</span><div class="imgs" id="se_${k}"></div></div>`;
+    const val = src==='store' ? (s[k]||'') : (SITE_ED.texts[k]||''), ph = src==='store' ? (DEFAULT_STORE[k]||'') : (DEFAULT_TEXTS[k]||'').replace(/BAKHUR/g,shopName());
+    const area = kind==='area';
+    return `<div class="fld"><label class="lbl" for="se_${k}">${esc(l)}</label>${area?`<textarea class="inp" id="se_${k}" rows="3" data-src="${src||'t'}" placeholder="${esc(ph)}">${esc(val)}</textarea>`:`<input class="inp" id="se_${k}" data-src="${src||'t'}" value="${esc(val)}" placeholder="${esc(ph)}">`}</div>`;
+  };
+  $('#admBody').innerHTML=`<div class="site-ed">
+    <nav class="se-nav" aria-label="Разделы сайта">${SITE_GROUPS.map(g=>`<a href="#se-${g.id}" onclick="seGo('${g.id}');return false">${esc(g.title)}</a>`).join('')}</nav>
+    <div class="se-main">
+      <div class="adm-h"><h2>Сайт</h2></div>
+      <p class="adm-hint">Здесь меняются все тексты, фото, название и цвет сайта. Пустое поле: остаётся стандартный текст (он виден серым). После «Сохранить» изменения видны у вас сразу, у всех: после «Опубликовать».</p>
+      ${SITE_GROUPS.map(g=>`<section class="se-card" id="se-${g.id}"><h3>${esc(g.title)}</h3>${g.hint?`<p class="adm-hint">${esc(g.hint)}</p>`:''}
+        ${g.id==='look'?fld(g.fields[0])+`<div class="fld"><span class="lbl">Цвет акцента (кнопки, ссылки, отметки)</span><div class="sw-row" id="se_accent">${Object.entries(ACCENTS).map(([k,a])=>`<button type="button" class="sw-a${SITE_ED.accent===k?' on':''}" data-a="${k}" onclick="seAccent('${k}')"><i style="background:${a.l[0]}"></i>${esc(a.name)}</button>`).join('')}</div></div>`:`<div class="se-grid">${g.fields.map(fld).join('')}</div>`}
+      </section>`).join('')}
+      <button class="se-reset" type="button" onclick="seReset()">Вернуть все стандартные тексты</button>
+      <div class="se-bar"><button class="btn red" type="button" onclick="saveSite()">Сохранить</button><button class="btn line" type="button" onclick="saveSite(true)">Сохранить и посмотреть</button></div>
+    </div></div>`;
+  ['heroImg','aboutImg'].forEach(seImgBox);
+}
+function seGo(id){ const el=document.getElementById('se-'+id); if(el) $('#admBody').scrollTo({top:el.offsetTop-14,behavior:REDUCED?'auto':'smooth'}); }
+function seAccent(k){ SITE_ED.accent=k; $$('#se_accent .sw-a').forEach(b=>b.classList.toggle('on',b.dataset.a===k)); }
+function seImgBox(k){
+  const u=SITE_ED[k];
+  $('#se_'+k).innerHTML = u ? `<div class="im"><img src="${esc(u)}" alt=""><button type="button" onclick="SITE_ED['${k}']='';seImgBox('${k}')" aria-label="Убрать фото">×</button></div>`
+    : `<label class="add">Загрузить фото<input type="file" accept="image/*" hidden onchange="pickImg(this,u=>{SITE_ED['${k}']=u;seImgBox('${k}')},2000)"></label>`;
+}
+function seReset(){ confirmAction('Вернуть все стандартные тексты? Название, цвет и фото останутся.',()=>{ $$('#admBody [data-src="t"]').forEach(i=>i.value=''); toast('Поля очищены. Нажмите «Сохранить».'); }); }
+function saveSite(view){
+  const s=DB.store(), texts={};
+  $$('#admBody [data-src]').forEach(i=>{ const k=i.id.slice(3), v=i.value.trim();
+    if(i.dataset.src==='store') s[k]=v; else if(v) texts[k]=v; });
+  if(!s.name) s.name=DEFAULT_STORE.name;
+  s.texts=texts; s.accent=SITE_ED.accent; s.heroImg=SITE_ED.heroImg; s.aboutImg=SITE_ED.aboutImg;
+  if(DB.save(LS.store,s)){ reloadAll(); updateDraftUI(); toast('Сохранено. Нажмите «Опубликовать», чтобы увидели все.'); if(view) closeAdmin(); }
+}
+
+/* ----- контакты и продавец ----- */
+function admContacts(){
+  const s=DB.store();
   const f=(k,l,ph,full)=>`<div class="fld${full?' full':''}"><label class="lbl" for="s_${k}">${l}</label><input class="inp" id="s_${k}" value="${esc(s[k]||'')}" placeholder="${esc(ph||'')}"></div>`;
-  const img=(k,l)=>`<div class="fld"><span class="lbl">${l}</span><div class="imgs" id="s_${k}_box"></div></div>`;
-  $('#admBody').innerHTML=`<div class="adm-h"><h2>Магазин</h2></div>
-  <p class="adm-hint">Контакты нужны для кнопок заказа. Пустой мессенджер на сайте будет приглушён.</p>
+  $('#admBody').innerHTML=`<div class="adm-h"><h2>Контакты</h2></div>
+  <p class="adm-hint">Контакты нужны для кнопок заказа. Пустой мессенджер на сайте будет приглушён. Ссылка Wildberries показывает кнопку WB в шапке сайта.</p>
   <div class="af">
-    ${f('telegram','Telegram (ник без @)','bakhur_grozny')}${f('whatsapp','WhatsApp (номер)','+7 928 000-00-00')}
-    ${f('instagram','Instagram (ник без @)','bakhurparfume')}${f('wildberries','Wildberries (ссылка на магазин)','https://www.wildberries.ru/seller/...')}${f('city','Город','Грозный')}
-    ${f('address','Адрес магазина','проспект, дом')}${f('hours','Часы работы','Ежедневно 10:00-21:00')}
-    ${f('heroTitle','Заголовок на первом экране','',true)}${f('heroSub','Подзаголовок (до 20 слов)','',true)}
-    ${img('heroImg','Фото первого экрана')}${img('aboutImg','Фото в блоке «О магазине»')}
-    ${f('ownerName','Подпись в блоке «О магазине»','Билал')}${f('seller','Продавец (ИП ФИО)','ИП Иванов И. И.')}
-    ${f('ownerNote','Текст о магазине','',true)}
+    ${f('telegram','Telegram (ник без @)','bakhurparfume')}${f('whatsapp','WhatsApp (номер)','+7 928 000-00-00')}
+    ${f('instagram','Instagram (ник без @)','bakhurrr')}${f('wildberries','Wildberries (ссылка на магазин)','https://www.wildberries.ru/seller/...')}
+    ${f('city','Город','Грозный')}${f('address','Адрес магазина','проспект, дом')}
+    ${f('hours','Часы работы','Ежедневно 10:00-21:00')}${f('seller','Продавец (ИП ФИО)','ИП Иванов И. И.')}
     <div class="fld full"><label class="lbl" for="s_delivery">Доставка</label><textarea class="inp" id="s_delivery" rows="3">${esc(s.delivery||'')}</textarea></div>
     ${f('inn','ИНН или ОГРНИП','')}
-    <div class="fld full"><button class="btn red" type="button" onclick="saveStore()">Сохранить</button></div>
+    <div class="fld full"><button class="btn red" type="button" onclick="saveContacts()">Сохранить</button></div>
   </div>`;
-  ['heroImg','aboutImg'].forEach(storeImgBox);
 }
-function storeImgBox(k){
-  const u=STORE_IMG[k];
-  $('#s_'+k+'_box').innerHTML = u ? `<div class="im"><img src="${esc(u)}" alt=""><button type="button" onclick="STORE_IMG['${k}']='';storeImgBox('${k}')" aria-label="Убрать фото">×</button></div>`
-    : `<label class="add">Загрузить фото<input type="file" accept="image/*" hidden onchange="pickImg(this,u=>{STORE_IMG['${k}']=u;storeImgBox('${k}')},2000)"></label>`;
-}
-function saveStore(){
+function saveContacts(){
   const s=DB.store();
-  ['telegram','whatsapp','instagram','wildberries','city','address','hours','heroTitle','heroSub','ownerName','seller','ownerNote','inn'].forEach(k=>s[k]=$('#s_'+k).value.trim());
-  s.telegram=s.telegram.replace(/^@/,''); s.instagram=s.instagram.replace(/^@/,'');
+  ['telegram','whatsapp','instagram','wildberries','city','address','hours','seller','inn'].forEach(k=>s[k]=$('#s_'+k).value.trim());
+  s.telegram=s.telegram.replace(/^@/,'').replace(/^https?:\/\/t\.me\//,''); s.instagram=s.instagram.replace(/^@/,'').replace(/^https?:\/\/(www\.)?instagram\.com\//,'').replace(/\/.*$/,'');
   if(s.wildberries && !/^https:\/\/(www\.)?(wildberries\.ru|wb\.ru)\//i.test(s.wildberries)){ toast('Ссылка Wildberries должна начинаться с https://www.wildberries.ru/'); return; }
-  s.delivery=$('#s_delivery').value.trim(); Object.assign(s,STORE_IMG);
+  s.delivery=$('#s_delivery').value.trim();
   if(DB.save(LS.store,s)){ reloadAll(); updateDraftUI(); toast('Сохранено. Нажмите «Опубликовать».'); }
 }
 

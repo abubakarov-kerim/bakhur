@@ -794,3 +794,60 @@ img.cut{ filter:drop-shadow(var(--sx,0px) var(--sy,22px) 22px var(--btl)); }
 .wb-mark{ width:26px; height:26px; border-radius:50%; display:grid; place-items:center; background:#A73AFD; color:#fff; font:800 .62rem/1 var(--f-b); letter-spacing:.02em; flex:none; }
 .wb-order{ margin-top:12px; text-align:center; }
 .wb-order a{ color:var(--red-tx); font-weight:700; text-decoration:underline; text-underline-offset:3px; }
+
+/* кнопка Wildberries в шапке: всегда на виду */
+.wb-top{ display:inline-flex; align-items:center; gap:8px; min-height:40px; padding:0 14px 0 7px; margin-right:6px; border-radius:var(--pill); border:1px solid var(--line2); background:var(--sur); align-self:center;
+  font:700 .85rem/1 var(--f-b); color:var(--tx); transition:border-color .2s, transform .15s; }
+.wb-top:hover{ border-color:#A73AFD; }
+.wb-top:active{ transform:scale(.97); }
+.wb-top[hidden]{ display:none; }
+@media (max-width:599px){ .wb-top{ padding:0; border:0; background:none; min-width:40px; justify-content:center; margin-right:0; } .wb-top .wb-txt{ display:none; } .wb-top .wb-mark{ width:30px; height:30px; } }
+
+/* страница «Сайт» в админке */
+.site-ed{ display:grid; gap:20px; }
+.se-nav{ position:sticky; top:-24px; z-index:3; display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding:8px 0; margin:-8px 0 0; background:var(--bg); }
+.se-nav::-webkit-scrollbar{ display:none; }
+.se-nav a{ flex:none; padding:9px 14px; border-radius:var(--pill); border:1px solid var(--line2); font:600 .85rem/1 var(--f-b); color:var(--tx2); background:var(--sur); }
+.se-nav a:hover{ border-color:var(--red); color:var(--tx); }
+.se-card{ background:var(--sur); border:1px solid var(--line); border-radius:var(--r); padding:20px 18px 6px; margin-bottom:14px; scroll-margin-top:70px; }
+.se-card h3{ font:700 1.05rem/1.2 var(--f-d); margin-bottom:8px; }
+.se-card .adm-hint{ margin-bottom:14px; }
+.se-grid{ display:grid; gap:0 18px; }
+@media (min-width:800px){ .se-grid{ grid-template-columns:1fr 1fr; } .se-grid .fld:has(textarea){ grid-column:1/-1; } }
+.sw-row{ display:flex; flex-wrap:wrap; gap:8px; }
+.sw-a{ display:inline-flex; align-items:center; gap:8px; min-height:42px; padding:0 14px 0 8px; border-radius:var(--pill); border:1px solid var(--line2); background:var(--sur); font:600 .88rem/1 var(--f-b); }
+.sw-a i{ width:26px; height:26px; border-radius:50%; }
+.sw-a.on{ border-color:var(--tx); box-shadow:inset 0 0 0 1px var(--tx); }
+.se-bar{ position:sticky; bottom:0; z-index:3; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; padding:12px 0 calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(to top,var(--bg) 70%,transparent); }
+@media (max-width:599px){ .se-bar .btn{ flex:1 1 auto; padding:0 14px; } .se-bar .btn:first-child{ order:3; flex-basis:100%; min-height:42px; } }
+@media (min-width:1000px){ .site-ed{ grid-template-columns:220px 1fr; align-items:start; } .se-nav{ position:sticky; top:0; flex-direction:column; overflow:visible; margin:0; padding:0; background:none; } .se-nav a{ border-radius:12px; } }
+.se-reset{ display:block; margin:6px 0 4px; padding:10px 0; font:600 .85rem/1 var(--f-b); color:var(--mu); text-decoration:underline; text-underline-offset:3px; }
+.se-reset:hover{ color:var(--red-tx); }
+@media (max-width:599px){ .se-bar{ flex-wrap:nowrap; } .se-bar .btn{ flex:1 1 0; min-height:46px; font-size:.88rem; padding:0 10px; } .se-bar .btn:first-child{ order:0; flex-basis:0; min-height:46px; } }
+
+/* шапка на телефоне: название не ломает строку, иконки помещаются даже на 360 px */
+.logo{ min-width:0; }
+.logo-w{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+@media (max-width:480px){
+  .hdr-in{ gap:10px; }
+  .logo{ flex:1 1 auto; }
+  .logo-w{ font-size:clamp(.92rem,4.4vw,1.2rem); }
+  .hdr-act{ margin-right:-6px; flex:none; }
+  .hdr-act .ib{ width:38px; height:44px; }
+  .hdr-act .ib svg{ width:21px; height:21px; }
+  .wb-top{ min-width:38px; }
+}
+
+/* ===== под смартфон: поля без увеличения страницы в iPhone, кнопки под палец (от 40-44 px) ===== */
+.sort select{ font-size:16px; -webkit-appearance:none; appearance:none; min-height:48px; padding-right:22px;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235E6578' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right center/16px no-repeat; }
+@media (max-width:599px){ textarea.inp{ font-size:16px; } }
+.ftr-col a,.ftr-col button{ min-height:44px; display:inline-flex; align-items:center; padding:0; }
+.qty button{ width:40px; height:40px; }
+.ci-r .rm{ min-height:36px; padding:8px 0; display:inline-flex; align-items:center; }
+.chk{ min-height:42px; }
+.logo{ min-height:44px; justify-content:center; }
+.wb-order a{ display:inline-block; padding:8px 2px; }
+.hero-cta .btn,.pv-cta .btn{ min-height:52px; }
+@media (hover:none){ .card:hover{ transform:none; box-shadow:none; } .fam:hover b{ transform:none; } }
+@media (max-width:480px){ .adm-tabs{ padding:0 8px; justify-content:space-between; } .adm-tabs button{ padding:14px 7px; font-size:.84rem; } }

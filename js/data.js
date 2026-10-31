@@ -121,8 +121,8 @@ const DEFAULT_PRODUCTS = [
 ];
 
 const DEFAULT_STORE = {
-  name:'BAKHUR', city:'Грозный', address:'', hours:'', currency:'₽',
-  telegram:'', whatsapp:'', instagram:'bakhurparfume', wildberries:'https://www.wildberries.ru/seller/1408415',
+  name:'BAKHUR', accent:'blue', texts:{}, city:'Грозный', address:'', hours:'', currency:'₽',
+  telegram:'bakhurparfume', whatsapp:'', instagram:'bakhurrr', wildberries:'https://www.wildberries.ru/seller/1408415',
   heroTitle:'Ароматы, на которые оборачиваются', heroSub:'Оригинальная парфюмерия и отливанты. Особая любовь: Creed. Подберу аромат лично под вас.',
   heroImg:'', ownerNote:'16 лет с ароматами на ты. Подбираю аромат лично под каждого: под характер, повод и сезон. Только оригиналы.', ownerName:'Билал',
   delivery:'Самовывоз из магазина, курьер по Грозному в день заказа, доставка по Чечне и по России транспортной компанией. Стоимость доставки скажет менеджер.',
