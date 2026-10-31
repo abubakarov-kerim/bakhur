@@ -72,7 +72,18 @@ const soldOut = p => !vOn(p).length;
 const minVar = p => (vOn(p)[0] || p.variants[0] || {ml:0,price:0});
 const minPrice = p => { const on=vOn(p); return on.length ? Math.min(...on.map(v=>v.price)) : (p.variants[0]||{}).price||0; };
 const isDecant = v => v.ml<=10;
-const volName = ml => ml<=10 ? ml+' мл, отливант' : ml+' мл, флакон';
+const volName = (ml,oil) => oil ? `${ml} мл, микс: ${oil} мл масла + ${ml-oil} мл парфюмерной воды` : ml<=10 ? ml+' мл, отливант' : ml+' мл, флакон';
+/* ===== МИКС С МАСЛОМ =====
+   Флакон, в котором часть масло, остальное парфюмерная вода. Размеры, варианты масла и цену флакона задаёт владелец
+   (админка, вкладка «Масло»). Цена: мл масла × цена масла + мл воды × цена воды + флакон. */
+const mixCfg = () => { const m=Object.assign({on:true,sizes:[20,30,50],oils:[5,10,15],bottle:0},STORE.mix||{});
+  m.sizes=(m.sizes||[]).map(Number).filter(x=>x>0).sort((a,b)=>a-b); m.oils=(m.oils||[]).map(Number).filter(x=>x>0).sort((a,b)=>a-b); m.bottle=+m.bottle||0; return m; };
+/* цена 1 мл парфюмерной воды: по самому выгодному отливанту, если отливантов нет, по флакону */
+function edpPerMl(p){ const on=vOn(p); const d=on.filter(isDecant); const src=d.length?d:on; return src.length ? Math.min(...src.map(v=>v.price/v.ml)) : 0; }
+const oilPerMl = p => +p.oilPrice>0 ? +p.oilPrice : Math.round(edpPerMl(p)*0.8/10)*10;
+const mixOils = (size) => mixCfg().oils.filter(o=>o<size);
+const mixOn = p => { const m=mixCfg(); return !!(m.on && !p.noMix && edpPerMl(p)>0 && m.sizes.some(s=>mixOils(s).length)); };
+const mixPrice = (p,size,oil) => Math.round((oil*oilPerMl(p) + (size-oil)*edpPerMl(p) + mixCfg().bottle)/10)*10;
 const famNames = p => p.fam.map(f=>FAMILIES[f]).filter(Boolean);
 const allNotes = p => [...p.top,...p.heart,...p.base];
 const photo = (p,i) => p.images[i||0] || '';
@@ -129,7 +140,14 @@ const tintOf = p => `style="--tint:${pastel(p)}"`;
 /* картинка товара: фото, если есть, иначе рисунок флакона */
 /* фото без фона (png/webp с прозрачностью) показываем целиком, по центру */
 const isCut = u => /^data:image\/(png|webp)/i.test(u||'') || /\.(png|webp)(\?|#|$)/i.test(u||'');
-function visual(p,i,cls){ const u=photo(p,i); return u ? `<img class="${cls||'ph'}${isCut(u)?' cut':''}" src="${esc(u)}" alt="${esc(p.brand+' '+p.name)}" loading="lazy" decoding="async">` : bottleSVG(p); }
+/* фото проявляется плавно, когда загрузилось (класс ld); все фото каталога заранее подгружаются в фоне (preloadPhotos) */
+function visual(p,i,cls){ const u=photo(p,i); return u ? `<img class="${cls||'ph'}${isCut(u)?' cut':''}${PRELOADED.has(u)?' ld':''}" src="${esc(u)}" alt="${esc(p.brand+' '+p.name)}" decoding="async" onload="this.classList.add('ld')">` : bottleSVG(p); }
+const PRELOADED=new Set();
+function preloadPhotos(){
+  const urls=[...new Set(PRODUCTS.map(p=>photo(p,0)).filter(Boolean))];
+  let k=0; const next=()=>{ const u=urls[k++]; if(!u) return; const im=new Image(); im.decoding='async'; im.onload=()=>{ PRELOADED.add(u); next(); }; im.onerror=next; im.src=u; };
+  for(let n=0;n<4;n++) next();   // по 4 фото одновременно, чтобы не мешать первому экрану
+}
 
 /* ====== ШТРИХКОД: у каждого аромата свой, из его кода ====== */
 function barcodeSVG(code){
@@ -359,10 +377,10 @@ function closeFilters(){ $('#flt').classList.remove('open'); if(!$('#drawer').cl
 function focusSearch(){ goSection('catalog'); setTimeout(()=>$('#q').focus({preventScroll:true}),700); }
 
 /* ====== ДОСЬЕ АРОМАТА ====== */
-const PV={id:null,ml:0,img:0,t:0};
+const PV={id:null,ml:0,img:0,t:0,mode:'std',mSize:0,mOil:0};
 function openProduct(id,noPush){
   const p=byId(id); if(!p) return;
-  const show=()=>{ hideOverlays(true); PV.id=id; PV.img=0; PV.t=0; const mv=minVar(p); PV.ml=mv.ml;
+  const show=()=>{ hideOverlays(true); PV.id=id; PV.img=0; PV.t=0; const mv=minVar(p); PV.ml=mv.ml; PV.mode='std'; PV.mSize=0; PV.mOil=0;
     renderProduct(); const v=$('#pview'); v.classList.add('open'); $('#pvBody').scrollTop=0; syncLock();
     if(!noPush) history.pushState({ov:'p'},'','#p='+encodeURIComponent(id)); };
   curtain(show);
@@ -375,7 +393,8 @@ function renderProduct(still){
   $('#pvCrumb').textContent=p.brand+' / '+p.name;
   const thumbs = p.images.length>1 ? `<div class="pv-thumbs">${p.images.map((u,i)=>`<button type="button" class="${i===PV.img?'on':''}" onclick="pvImg(${i})" aria-label="Фото ${i+1}"><img src="${esc(u)}" alt=""></button>`).join('')}</div>` : '';
   const vols = p.variants.map(x=>`<button type="button" class="vol${x.ml===v.ml?' on':''}${x.out?' off':''}" ${x.out?'disabled':''} onclick="pvVol(${x.ml})"><b>${x.ml} мл</b><span>${x.out?'нет':money(x.price)}</span></button>`).join('');
-  const sims = similar(p);
+  const sims = similar(p), mx = mixOn(p);
+  if(PV.mode==='mix' && !mx) PV.mode='std';
   $('#pvBody').innerHTML=`<div class="pv">
     <div class="pv-gal"><div class="pv-gal-in"><div class="pv-main" id="pvMain" ${tintOf(p)}>${visual(p,PV.img)}</div>${thumbs}
       <div class="pv-code">${barcodeSVG(p.code)}<span>BK-${esc(p.code)}</span></div></div></div>
@@ -384,11 +403,12 @@ function renderProduct(still){
       <h1 class="pv-name">${esc(p.name)}</h1>
       <div class="pv-meta"><span>${esc(CONCS[p.conc]||p.conc)}</span><span>${esc(GENDERS[p.gender])}</span><b>${esc(famNames(p).join(', '))}</b></div>
       <p class="pv-desc">${esc(p.desc||'')}</p>
-      <div><span class="lbl">Объём</span><div class="vols">${vols}</div></div>
-      <div class="pv-price">${out?'<span class="now">Нет в наличии</span>':`<span class="now">${money(v.price)}</span>${v.old>v.price?`<s>${money(v.old)}</s>`:''}<small>${isDecant(v)?'отливант из оригинала':'флакон'}</small>`}</div>
+      ${mx?`<div class="mode-seg seg" role="tablist" aria-label="Как купить"><button type="button" role="tab" class="${PV.mode==='std'?'on':''}" aria-selected="${PV.mode==='std'}" onclick="pvMode('std')">Как есть</button><button type="button" role="tab" class="${PV.mode==='mix'?'on':''}" aria-selected="${PV.mode==='mix'}" onclick="pvMode('mix')">Микс с маслом</button></div>`:''}
+      ${PV.mode==='mix'&&mx ? mixHTML(p) : `<div><span class="lbl">Объём</span><div class="vols">${vols}</div></div>`}
+      <div class="pv-price">${out?'<span class="now">Нет в наличии</span>': PV.mode==='mix'&&mx ? `<span class="now">${money(mixPrice(p,PV.mSize,PV.mOil))}</span><small>флакон ${PV.mSize} мл: ${PV.mOil} мл масла + ${PV.mSize-PV.mOil} мл воды</small>` : `<span class="now">${money(v.price)}</span>${v.old>v.price?`<s>${money(v.old)}</s>`:''}<small>${isDecant(v)?'отливант из оригинала':'флакон'}</small>`}</div>
       <div class="pv-cta">
-        <button class="btn red" type="button" onclick="pvAdd(false)" ${out||v.out?'disabled':''}>В корзину</button>
-        <button class="btn line" type="button" onclick="pvAdd(true)" ${out||v.out?'disabled':''}>Купить сейчас</button>
+        <button class="btn red" type="button" onclick="pvAdd(false)" ${out||(PV.mode!=='mix'&&v.out)?'disabled':''}>В корзину</button>
+        <button class="btn line" type="button" onclick="pvAdd(true)" ${out||(PV.mode!=='mix'&&v.out)?'disabled':''}>Купить сейчас</button>
         <button class="wb${w?' on':''}" type="button" onclick="toggleWish(${jsq(p.id)},this)" aria-label="${w?'Убрать из избранного':'В избранное'}" aria-pressed="${w}">${HEART}</button>
       </div>
       <section class="dos" aria-label="Досье аромата">
@@ -436,8 +456,23 @@ function pvTime(t,setSlider){
 function pvImg(i){ const p=byId(PV.id); PV.img=i; $('#pvMain').innerHTML=visual(p,i); $$('.pv-thumbs button').forEach((b,j)=>b.classList.toggle('on',j===i)); }
 /* смена объёма: перерисовываем без анимации появления, иначе блоки на миг исчезают */
 function pvVol(ml){ PV.ml=ml; const sc=$('#pvBody').scrollTop; renderProduct(true); $('#pvBody').scrollTop=sc; }
-function pvAdd(buy){ const p=byId(PV.id); const v=p.variants.find(x=>x.ml===PV.ml); if(!v||v.out){ toast('Этого объёма сейчас нет'); return; }
-  addToCart(p.id,v.ml,1); if(buy){ history.state&&history.state.ov ? (history.back(), setTimeout(()=>openDrawer('cart'),80)) : openDrawer('cart'); } }
+function mixHTML(p){
+  const m=mixCfg(); const sizes=m.sizes.filter(x=>mixOils(x).length);
+  if(!sizes.includes(PV.mSize)) PV.mSize=sizes[0];
+  const oils=mixOils(PV.mSize); if(!oils.includes(PV.mOil)) PV.mOil=oils[0];
+  const pc=Math.round(PV.mOil/PV.mSize*100);
+  return `<div class="mix">
+    <div><span class="lbl">Флакон</span><div class="vols">${sizes.map(x=>`<button type="button" class="vol${x===PV.mSize?' on':''}" onclick="pvMix(${x},0)"><b>${x} мл</b><span>от ${money(Math.min(...mixOils(x).map(o=>mixPrice(p,x,o))))}</span></button>`).join('')}</div></div>
+    <div><span class="lbl">Сколько масла</span><div class="vols">${oils.map(o=>`<button type="button" class="vol${o===PV.mOil?' on':''}" onclick="pvMix(0,${o})"><b>${o} мл</b><span>${Math.round(o/PV.mSize*100)}% масла</span></button>`).join('')}</div></div>
+    <div class="mix-bar" role="img" aria-label="${PV.mOil} мл масла и ${PV.mSize-PV.mOil} мл парфюмерной воды"><i style="width:${pc}%"><b>${PV.mOil} мл масла</b></i><span><b>${PV.mSize-PV.mOil} мл парфюмерной воды</b></span></div>
+    <p class="mix-note">Больше масла: аромат мягче, ближе к коже и дольше держится. Больше воды: ярче раскрывается и сильнее шлейф. Масло и вода со временем расслаиваются, перед нанесением встряхните флакон.</p>
+  </div>`;
+}
+function pvMode(m){ PV.mode=m; const sc=$('#pvBody').scrollTop; renderProduct(true); $('#pvBody').scrollTop=sc; }
+function pvMix(size,oil){ if(size) PV.mSize=size; if(oil) PV.mOil=oil; const sc=$('#pvBody').scrollTop; renderProduct(true); $('#pvBody').scrollTop=sc; }
+function pvAdd(buy){ const p=byId(PV.id);
+  if(PV.mode==='mix' && mixOn(p)){ addToCart(p.id,PV.mSize,1,PV.mOil); }
+  else { const v=p.variants.find(x=>x.ml===PV.ml); if(!v||v.out){ toast('Этого объёма сейчас нет'); return; } addToCart(p.id,v.ml,1); } if(buy){ history.state&&history.state.ov ? (history.back(), setTimeout(()=>openDrawer('cart'),80)) : openDrawer('cart'); } }
 function similar(p){
   return PRODUCTS.filter(q=>q.id!==p.id).map(q=>({q,s:q.fam.filter(f=>p.fam.includes(f)).length*2+q.char.filter(c=>p.char.includes(c)).length+(q.gender===p.gender?1:0)}))
     .filter(x=>x.s>1).sort((a,b)=>b.s-a.s).slice(0,8).map(x=>x.q);
@@ -509,12 +544,14 @@ const loadSaved=k=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'[]'); ret
 let cart=loadSaved('bakhur_cart').filter(c=>c&&c.id&&c.ml&&c.qty>0), wish=loadSaved('bakhur_wish').filter(x=>typeof x==='string');
 function saveCW(){ try{ localStorage.setItem('bakhur_cart',JSON.stringify(cart)); localStorage.setItem('bakhur_wish',JSON.stringify(wish)); }catch(e){} }
 /* после загрузки товаров: убираем из корзины то, чего больше нет */
-function syncSaved(){ cart=cart.filter(c=>{ const p=byId(c.id); return p && p.variants.some(v=>v.ml===c.ml); }); if($('#cartCount')) updateCounts(); }
-const lineOf=c=>{ const p=byId(c.id), v=p&&p.variants.find(x=>x.ml===c.ml); return {p,v,sum:v?v.price*c.qty:0}; };
-function addToCart(id,ml,qty){
-  const p=byId(id), v=p&&p.variants.find(x=>x.ml===ml); if(!v||v.out){ toast('Этого объёма сейчас нет'); return; }
-  const ex=cart.find(c=>c.id===id&&c.ml===ml); if(ex) ex.qty+=qty; else cart.push({id,ml,qty});
-  updateCounts(); renderDrawer(); toast(`${p.name}, ${ml} мл: в корзине`);
+function syncSaved(){ cart=cart.filter(c=>{ const p=byId(c.id); if(!p) return false; return c.oil ? (mixOn(p) && mixCfg().sizes.includes(c.ml) && mixOils(c.ml).includes(c.oil)) : p.variants.some(v=>v.ml===c.ml); }); if($('#cartCount')) updateCounts(); }
+const lineOf=c=>{ const p=byId(c.id); if(p&&c.oil){ const price=mixPrice(p,c.ml,c.oil); return {p,v:{ml:c.ml,price},sum:price*c.qty}; } const v=p&&p.variants.find(x=>x.ml===c.ml); return {p,v,sum:v?v.price*c.qty:0}; };
+function addToCart(id,ml,qty,oil){
+  oil=+oil||0; const p=byId(id);
+  if(!p) return;
+  if(!oil){ const v=p.variants.find(x=>x.ml===ml); if(!v||v.out){ toast('Этого объёма сейчас нет'); return; } }
+  const ex=cart.find(c=>c.id===id&&c.ml===ml&&(+c.oil||0)===oil); if(ex) ex.qty+=qty; else cart.push(oil?{id,ml,qty,oil}:{id,ml,qty});
+  updateCounts(); renderDrawer(); toast(oil?`${p.name}, микс ${ml} мл: в корзине`:`${p.name}, ${ml} мл: в корзине`);
 }
 function quickAdd(id){ const p=byId(id); if(!p||soldOut(p)){ toast('Этого аромата сейчас нет'); return; } addToCart(id,minVar(p).ml,1); }
 function changeQty(i,d){ const c=cart[i]; if(!c) return; c.qty+=d; if(c.qty<=0) cart.splice(i,1); updateCounts(); renderDrawer(); }
@@ -546,7 +583,7 @@ function renderDrawer(){
   }
   if(!cart.length){ body.innerHTML=`<div class="dr-empty"><b>Корзина пуста</b>Начните с отливанта на 5 мл: так проще понять, ваш ли это аромат.<br><button class="btn line" type="button" onclick="closeDrawer();goSection('catalog')">В каталог</button></div>`; foot.innerHTML=''; return; }
   body.innerHTML=cart.map((c,i)=>{ const {p,v,sum}=lineOf(c); if(!p||!v) return '';
-    return `<div class="ci">${ciImg(p)}<div><div class="ci-n">${esc(p.name)}</div><div class="ci-v">${esc(p.brand)}<br>${esc(volName(c.ml))}</div>
+    return `<div class="ci">${ciImg(p)}<div><div class="ci-n">${esc(p.name)}</div><div class="ci-v">${esc(p.brand)}<br>${esc(volName(c.ml,c.oil))}</div>
       <div class="qty"><button type="button" onclick="changeQty(${i},-1)" aria-label="Меньше">−</button><span>${c.qty}</span><button type="button" onclick="changeQty(${i},1)" aria-label="Больше">+</button></div></div>
       <div class="ci-r"><span class="price">${money(sum)}</span><button class="rm" type="button" onclick="removeLine(${i})">Удалить</button></div></div>`; }).join('');
   const total=cart.reduce((s,c)=>s+lineOf(c).sum,0);
@@ -563,7 +600,7 @@ function renderShip(){
 }
 function setShip(k){ shipMode=k; renderShip(); $('#orderText').value=buildOrderText(); }
 function buildOrderText(){
-  const lines=cart.map((c,i)=>{ const {p,sum}=lineOf(c); return p?`${i+1}. ${p.brand} ${p.name}, ${CONCS[p.conc]?p.conc:''}, ${volName(c.ml)} × ${c.qty} = ${money(sum)}`:''; }).filter(Boolean);
+  const lines=cart.map((c,i)=>{ const {p,sum}=lineOf(c); return p?`${i+1}. ${p.brand} ${p.name}, ${CONCS[p.conc]?p.conc:''}, ${volName(c.ml,c.oil)} × ${c.qty} = ${money(sum)}`:''; }).filter(Boolean);
   const total=cart.reduce((s,c)=>s+lineOf(c).sum,0), addr=$('#addr').value.trim(), com=$('#ocomm').value.trim();
   return `Здравствуйте! Хочу оформить заказ в ${STORE.name||'BAKHUR'}:\n\n${lines.join('\n')}\n\nИтого: ${money(total)}\nПолучение: ${SHIP[shipMode][0]}${shipMode!=='pickup'&&addr?'\nАдрес: '+addr:''}${com?'\nКомментарий: '+com:''}\n\nПодтвердите, пожалуйста, наличие и стоимость доставки.`;
 }
@@ -716,4 +753,7 @@ loadData(); reloadAll(); observeReveal();
   if(m && byId(decodeURIComponent(m[1]))){ history.replaceState(null,'',location.pathname+location.search); openProduct(decodeURIComponent(m[1])); }
   else if(location.hash==='#match'){ history.replaceState(null,'',location.pathname+location.search); openQuiz(); }
   if(typeof adminBoot==='function') adminBoot();
+  (window.requestIdleCallback||(f=>setTimeout(f,600)))(preloadPhotos);
+  /* страховка: если браузер не прислал событие загрузки, всё равно показываем фото */
+  setTimeout(()=>$$('img.ph,img.cut').forEach(i=>{ if(i.complete) i.classList.add('ld'); }),2500);
 })();

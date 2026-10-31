@@ -862,3 +862,29 @@ img.cut{ filter:drop-shadow(var(--sx,0px) var(--sy,22px) 22px var(--btl)); }
 .home-btn svg{ width:18px; height:18px; fill:none; stroke:var(--red-tx); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none; }
 .home-btn .logo-w{ font-size:.95rem; max-width:40vw; }
 @media (max-width:599px){ .pv-bar>span{ display:none; } }
+
+/* микс с маслом в досье */
+.mode-seg{ display:flex; width:100%; margin-bottom:18px; }
+.mode-seg button{ flex:1; min-height:44px; font-size:.92rem; }
+.mix{ display:grid; gap:16px; }
+.mix-bar{ display:flex; height:52px; border-radius:var(--r-sm); overflow:hidden; border:1px solid var(--line); background:var(--sur); }
+.mix-bar i{ display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#E7B04A,#C98A1C); color:#2B1A02; min-width:64px; transition:width .5s var(--ease); }
+.mix-bar span{ flex:1; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb,var(--red) 10%,var(--sur)); color:var(--tx); }
+.mix-bar b{ font:700 .78rem/1.15 var(--f-b); text-align:center; padding:0 8px; font-style:normal; }
+.mix-note{ color:var(--mu); font-size:.84rem; line-height:1.5; }
+/* админка: цены микса */
+.mx-list{ display:grid; gap:8px; max-width:980px; }
+.mx-row{ display:grid; grid-template-columns:1fr; gap:8px 16px; align-items:center; padding:12px 14px; background:var(--sur); border:1px solid var(--line); border-radius:var(--r-sm); }
+.mx-n b{ display:block; font:700 .92rem/1.2 var(--f-d); }
+.mx-n span{ font-size:.8rem; color:var(--mu); }
+.mx-in{ display:flex; align-items:center; gap:10px; font-size:.8rem; color:var(--mu); }
+.mx-in .inp{ max-width:130px; min-height:42px; }
+@media (min-width:700px){ .mx-row{ grid-template-columns:1fr auto auto; } }
+
+/* фото: пока грузится, виден цветной фон карточки, потом флакон плавно проявляется */
+img.ph,img.cut{ opacity:0; transition:opacity .6s var(--ease), transform 1s var(--ease), filter 1s var(--ease), translate 1s var(--ease); }
+img.ph.ld,img.cut.ld,.imgs img,.pv-thumbs img,.hv-photo{ opacity:1; }
+.card-img:has(img:not(.ld))::after{ content:''; display:block; position:absolute; inset:0; background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%) 0 0/250% 100%; animation:shimmer 1.4s linear infinite; transform:none; height:auto; border-radius:inherit; }
+@keyframes shimmer{ from{ background-position:120% 0; } to{ background-position:-120% 0; } }
+@media (prefers-reduced-motion:reduce){ img.ph,img.cut{ opacity:1; } .card-img:has(img:not(.ld))::after{ animation:none; } }
+@media (max-width:400px){ .adm-tabs{ padding:0 4px; } .adm-tabs button{ padding:14px 4px; font-size:.8rem; } }

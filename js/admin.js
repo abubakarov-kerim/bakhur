@@ -29,7 +29,7 @@ function logoutAdmin(){ try{ sessionStorage.removeItem('bakhur_authed'); }catch(
 let adminTab='products';
 function openAdmin(){ if(!isAdmin()){ openAdminGate(); return; } $('#adminPanel').classList.add('open'); syncLock(); admTab(adminTab); }
 function closeAdmin(){ $('#adminPanel').classList.remove('open'); if(location.hash==='#admin') history.replaceState(null,'',location.pathname+location.search); syncLock(); }
-function admTab(t){ adminTab=t; $$('#admTabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t)); ({products:admProducts,site:admSite,contacts:admContacts,access:admAccess,data:admData}[t]||admProducts)(); $('#admBody').scrollTop=0; updateDraftUI(); }
+function admTab(t){ adminTab=t; $$('#admTabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t)); ({products:admProducts,site:admSite,contacts:admContacts,mix:admMix,access:admAccess,data:admData}[t]||admProducts)(); $('#admBody').scrollTop=0; updateDraftUI(); }
 $('#admTabs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) admTab(b.dataset.tab); });
 
 /* ----- ароматы: список ----- */
@@ -221,6 +221,38 @@ function saveSite(view){
   if(!s.name) s.name=DEFAULT_STORE.name;
   s.texts=texts; s.accent=SITE_ED.accent; s.heroImg=SITE_ED.heroImg; s.aboutImg=SITE_ED.aboutImg;
   if(DB.save(LS.store,s)){ reloadAll(); updateDraftUI(); toast('Сохранено. Нажмите «Опубликовать», чтобы увидели все.'); if(view) closeAdmin(); }
+}
+
+/* ----- микс с маслом ----- */
+function admMix(){
+  const m=Object.assign({on:true,sizes:[20,30,50],oils:[5,10,15],bottle:0},DB.store().mix||{}), list=allProducts();
+  $('#admBody').innerHTML=`<div class="adm-h"><h2>Микс с маслом</h2></div>
+  <p class="adm-hint">Покупатель в аромате выбирает «Микс с маслом», размер флакона и сколько в нём масла. Остальное: парфюмерная вода этого аромата. Цена считается сама: мл масла × цена масла + мл воды × цена воды + флакон.</p>
+  <div class="af">
+    <div class="fld full"><label class="chk"><input type="checkbox" id="mx_on" ${m.on?'checked':''}>Показывать «Микс с маслом» на сайте</label></div>
+    <div class="fld"><label class="lbl" for="mx_sizes">Размеры флаконов, мл (через запятую)</label><input class="inp" id="mx_sizes" inputmode="numeric" value="${esc(m.sizes.join(', '))}" placeholder="20, 30, 50"></div>
+    <div class="fld"><label class="lbl" for="mx_oils">Сколько масла можно выбрать, мл</label><input class="inp" id="mx_oils" inputmode="numeric" value="${esc(m.oils.join(', '))}" placeholder="5, 10, 15"></div>
+    <div class="fld"><label class="lbl" for="mx_bottle">Цена самого флакона, ₽ (0, если входит в цену)</label><input class="inp" id="mx_bottle" type="number" min="0" inputmode="numeric" value="${+m.bottle||0}"></div>
+  </div>
+  <div class="adm-h adm-sec"><h2>Цены по ароматам</h2></div>
+  <p class="adm-hint">Цена 1 мл воды берётся из ваших отливантов сама. Цену 1 мл масла впишите свою; пустое поле: примерная цена (серым). Галочка «Без микса»: у этого аромата микса не будет.</p>
+  <div class="mx-list">${list.map(p=>{ const e=edpPerMl(p), o=Math.round(e*0.8/10)*10;
+    return `<div class="mx-row"><div class="mx-n"><b>${esc(p.name)}</b><span>${esc(p.brand)} · вода ${e?money(Math.round(e)):'нет отливантов'} за 1 мл</span></div>
+      <label class="mx-in"><span>Масло, ₽ за 1 мл</span><input class="inp" type="number" min="0" inputmode="numeric" data-mx="${esc(p.id)}" value="${+p.oilPrice||''}" placeholder="${o||''}"></label>
+      <label class="chk"><input type="checkbox" data-nomix="${esc(p.id)}" ${p.noMix?'checked':''}>Без микса</label></div>`; }).join('')}</div>
+  <div class="se-bar"><button class="btn red" type="button" onclick="saveMix()">Сохранить</button></div>`;
+}
+function saveMix(){
+  const nums=v=>[...new Set(String(v).split(/[,;\s]+/).map(Number).filter(x=>x>0&&x<=500))].sort((a,b)=>a-b);
+  const sizes=nums($('#mx_sizes').value), oils=nums($('#mx_oils').value);
+  if(!sizes.length||!oils.length){ toast('Впишите размеры флаконов и варианты масла'); return; }
+  if(!sizes.some(s=>oils.some(o=>o<s))){ toast('Масла должно быть меньше, чем объём флакона'); return; }
+  const s=DB.store(); s.mix={on:$('#mx_on').checked,sizes,oils,bottle:+$('#mx_bottle').value||0};
+  const list=allProducts();
+  list.forEach(p=>{ const i=$(`[data-mx="${CSS.escape(p.id)}"]`), n=$(`[data-nomix="${CSS.escape(p.id)}"]`);
+    if(i){ const v=+i.value; if(v>0) p.oilPrice=v; else delete p.oilPrice; } if(n){ if(n.checked) p.noMix=true; else delete p.noMix; } });
+  const ok=DB.save(LS.store,s) && DB.save(LS.prod,list);
+  if(ok){ reloadAll(); updateDraftUI(); toast('Сохранено. Нажмите «Опубликовать».'); }
 }
 
 /* ----- контакты и продавец ----- */

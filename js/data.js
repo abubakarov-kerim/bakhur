@@ -121,7 +121,8 @@ const DEFAULT_PRODUCTS = [
 ];
 
 const DEFAULT_STORE = {
-  name:'BAKHUR', accent:'blue', texts:{}, city:'Грозный', address:'', hours:'', currency:'₽',
+  name:'BAKHUR', accent:'blue', texts:{},
+  mix:{ on:true, sizes:[20,30,50], oils:[5,10,15], bottle:0 },   /* микс: флакон, часть масла, остальное парфюмерная вода */ city:'Грозный', address:'', hours:'', currency:'₽',
   telegram:'bakhurparfume', whatsapp:'', instagram:'bakhurrr', wildberries:'https://www.wildberries.ru/seller/1408415',
   heroTitle:'Ароматы, на которые оборачиваются', heroSub:'Оригинальная парфюмерия и отливанты. Особая любовь: Creed. Подберу аромат лично под вас.',
   heroImg:'', ownerNote:'16 лет с ароматами на ты. Подбираю аромат лично под каждого: под характер, повод и сезон. Только оригиналы.', ownerName:'Билал',
