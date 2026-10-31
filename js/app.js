@@ -472,7 +472,13 @@ function pvMode(m){ PV.mode=m; const sc=$('#pvBody').scrollTop; renderProduct(tr
 function pvMix(size,oil){ if(size) PV.mSize=size; if(oil) PV.mOil=oil; const sc=$('#pvBody').scrollTop; renderProduct(true); $('#pvBody').scrollTop=sc; }
 function pvAdd(buy){ const p=byId(PV.id);
   if(PV.mode==='mix' && mixOn(p)){ addToCart(p.id,PV.mSize,1,PV.mOil); }
-  else { const v=p.variants.find(x=>x.ml===PV.ml); if(!v||v.out){ toast('Этого объёма сейчас нет'); return; } addToCart(p.id,v.ml,1); } if(buy){ history.state&&history.state.ov ? (history.back(), setTimeout(()=>openDrawer('cart'),80)) : openDrawer('cart'); } }
+  else { const v=p.variants.find(x=>x.ml===PV.ml); if(!v||v.out){ toast('Этого объёма сейчас нет'); return; } addToCart(p.id,v.ml,1); } if(buy) buyNow(); }
+/* «Купить сейчас»: аромат закрывается без шторки, сразу открывается корзина */
+let skipCurtain=false;
+function buyNow(){
+  if(history.state&&history.state.ov){ skipCurtain=true; history.back(); }
+  hideOverlays(); openDrawer('cart');
+}
 function similar(p){
   return PRODUCTS.filter(q=>q.id!==p.id).map(q=>({q,s:q.fam.filter(f=>p.fam.includes(f)).length*2+q.char.filter(c=>p.char.includes(c)).length+(q.gender===p.gender?1:0)}))
     .filter(x=>x.s>1).sort((a,b)=>b.s-a.s).slice(0,8).map(x=>x.q);
@@ -702,6 +708,7 @@ window.addEventListener('popstate',()=>{
   const h=location.hash;
   const m=/^#p=(.+)$/.exec(h);
   if(m && byId(decodeURIComponent(m[1]))){ openProduct(decodeURIComponent(m[1]),true); return; }
+  if(skipCurtain){ skipCurtain=false; hideOverlays(); syncLock(); return; }
   if($('#pview').classList.contains('open')||$('#quiz').classList.contains('open')) curtain(()=>hideOverlays());
 });
 /* фото не загрузилось: показываем рисунок флакона */
