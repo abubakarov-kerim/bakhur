@@ -788,3 +788,9 @@ img.cut{ filter:drop-shadow(var(--sx,0px) var(--sy,22px) 22px var(--btl)); }
 @keyframes btShadow{ 0%,100%{ transform:scale(1); opacity:.9; } 50%{ transform:scale(.82); opacity:.55; } }
 @media (prefers-reduced-motion:reduce){ .pv-main>img.cut,.hero-vis>img.cut,.pv-main>svg,.hero-vis>svg,.pv-main::after,.hero-vis::after{ animation:none; } }
 @media (min-width:900px){ .hero-in{ grid-template-columns:1.3fr .7fr; } .hero h1{ font-size:clamp(2.6rem,3.7vw,3.4rem); max-width:none; } }
+
+/* кнопка магазина на Wildberries: фирменный фиолетовый кружок WB, остальное в цветах сайта */
+.wb-link{ margin-top:22px; gap:12px; }
+.wb-mark{ width:26px; height:26px; border-radius:50%; display:grid; place-items:center; background:#A73AFD; color:#fff; font:800 .62rem/1 var(--f-b); letter-spacing:.02em; flex:none; }
+.wb-order{ margin-top:12px; text-align:center; }
+.wb-order a{ color:var(--red-tx); font-weight:700; text-decoration:underline; text-underline-offset:3px; }

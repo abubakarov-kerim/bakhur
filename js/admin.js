@@ -183,7 +183,7 @@ function admStore(){
   <p class="adm-hint">Контакты нужны для кнопок заказа. Пустой мессенджер на сайте будет приглушён.</p>
   <div class="af">
     ${f('telegram','Telegram (ник без @)','bakhur_grozny')}${f('whatsapp','WhatsApp (номер)','+7 928 000-00-00')}
-    ${f('instagram','Instagram (ник без @)','bakhurrr')}${f('city','Город','Грозный')}
+    ${f('instagram','Instagram (ник без @)','bakhurparfume')}${f('wildberries','Wildberries (ссылка на магазин)','https://www.wildberries.ru/seller/...')}${f('city','Город','Грозный')}
     ${f('address','Адрес магазина','проспект, дом')}${f('hours','Часы работы','Ежедневно 10:00-21:00')}
     ${f('heroTitle','Заголовок на первом экране','',true)}${f('heroSub','Подзаголовок (до 20 слов)','',true)}
     ${img('heroImg','Фото первого экрана')}${img('aboutImg','Фото в блоке «О магазине»')}
@@ -202,8 +202,9 @@ function storeImgBox(k){
 }
 function saveStore(){
   const s=DB.store();
-  ['telegram','whatsapp','instagram','city','address','hours','heroTitle','heroSub','ownerName','seller','ownerNote','inn'].forEach(k=>s[k]=$('#s_'+k).value.trim());
+  ['telegram','whatsapp','instagram','wildberries','city','address','hours','heroTitle','heroSub','ownerName','seller','ownerNote','inn'].forEach(k=>s[k]=$('#s_'+k).value.trim());
   s.telegram=s.telegram.replace(/^@/,''); s.instagram=s.instagram.replace(/^@/,'');
+  if(s.wildberries && !/^https:\/\/(www\.)?(wildberries\.ru|wb\.ru)\//i.test(s.wildberries)){ toast('Ссылка Wildberries должна начинаться с https://www.wildberries.ru/'); return; }
   s.delivery=$('#s_delivery').value.trim(); Object.assign(s,STORE_IMG);
   if(DB.save(LS.store,s)){ reloadAll(); updateDraftUI(); toast('Сохранено. Нажмите «Опубликовать».'); }
 }

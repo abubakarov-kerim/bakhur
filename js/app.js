@@ -201,6 +201,9 @@ function renderHero(){
   const ap = PRODUCTS.filter(p=>photo(p,0))[2] || PRODUCTS[2];
   av.innerHTML = STORE.aboutImg ? `<img src="${esc(STORE.aboutImg)}" alt="" loading="lazy">` : (ap?visual(ap,0):'');
   if(ap) av.style.setProperty('--tint',pastel(ap));
+  /* магазин на Wildberries: кнопка в блоке о магазине, строка в оформлении заказа, ссылка в подвале */
+  const wb=wbUrl(); ['#wbLink','#wbOrderLink'].forEach(sel=>{ const a=$(sel); if(a) a.href=wb||'#'; });
+  $('#wbLink').hidden=!wb; $('#wbOrder').hidden=!wb;
   const d=STORE.delivery||''; $('#deliveryShort').textContent = d.length>140 ? d.slice(0,d.indexOf('.',60)+1||140) : d;
 }
 let railMode='hit';
@@ -567,11 +570,14 @@ function confirmAction(text,yes){ $('#confirmText').textContent=text; $('#confir
 function syncLock(){ const any=$$('.ov.open,.drawer.open,.modal.open,.flt.open').length || document.body.classList.contains('intro-run'); document.body.classList.toggle('lock',!!any); }
 function hideOverlays(keepHistory){ ['#pview','#quiz'].forEach(s=>$(s).classList.remove('open')); syncLock(); }
 function closeAll(){ closeDrawer(); closeFilters(); }
+/* ссылка на Wildberries: принимаем только адреса самого Wildberries */
+function wbUrl(){ const u=String(STORE.wildberries||'').trim(); return /^https:\/\/(www\.)?(wildberries\.ru|wb\.ru)\//i.test(u) ? u : ''; }
 function contactsHTML(){
   const s=STORE, a=[];
   if(s.telegram) a.push(`<a href="${tgUrl(s.telegram)}" target="_blank" rel="noopener">Telegram</a>`);
   if(s.whatsapp) a.push(`<a href="https://wa.me/${String(s.whatsapp).replace(/\D/g,'')}" target="_blank" rel="noopener">WhatsApp</a>`);
   if(s.instagram) a.push(`<a href="https://instagram.com/${encodeURIComponent(String(s.instagram).replace(/^@/,''))}" target="_blank" rel="noopener">Instagram*</a>`);
+  if(wbUrl()) a.push(`<a href="${esc(wbUrl())}" target="_blank" rel="noopener">Wildberries</a>`);
   if(s.address) a.push(`<span>${esc(s.city?s.city+', ':'')}${esc(s.address)}</span>`);
   if(s.hours) a.push(`<span class="muted">${esc(s.hours)}</span>`);
   return a.length?a.join(''):'<span class="muted">Контакты магазина появятся здесь</span>';
