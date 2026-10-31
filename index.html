@@ -12,11 +12,11 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%232340FF' rx='8'/%3E%3Cpath d='M10 7h7.5a5 5 0 0 1 2.6 9.3A5.2 5.2 0 0 1 17.8 26H10zm3.4 3v5.2h3.8a2.6 2.6 0 0 0 0-5.2zm0 8v5h4.2a2.5 2.5 0 0 0 0-5z' fill='%23FFFFFF'/%3E%3C/svg%3E">
 <link rel="preload" href="fonts/Unbounded-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="css/style.css?v=2026-10-30.4">
+<link rel="stylesheet" href="css/style.css?v=2026-10-31.1">
 <script>(function(){try{var t=localStorage.getItem('bakhur_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <script>
 /* АВТООБНОВЛЕНИЕ: если на сервере вышла новая версия, открываем её сами. При каждой публикации меняется BAKHUR_BUILD. */
-var BAKHUR_BUILD='2026-10-30.4';
+var BAKHUR_BUILD='2026-10-31.1';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
@@ -192,13 +192,13 @@ var BAKHUR_BUILD='2026-10-30.4';
 
 <!-- КАРТОЧКА АРОМАТА (досье) -->
 <div class="ov pview" id="pview" role="dialog" aria-modal="true" aria-label="Аромат">
-  <div class="pv-bar"><button class="ib" type="button" onclick="closeProduct()" aria-label="Назад"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><span id="pvCrumb"></span><button class="ib" type="button" onclick="closeProduct()" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="pv-bar"><button class="ib" type="button" onclick="closeProduct()" aria-label="Назад"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><a class="home-btn" href="#top" onclick="goHome();return false" aria-label="На главную"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10 19v-5h4v5"/></svg><span class="logo-w" data-t="name">BAKHUR</span></a><span id="pvCrumb"></span><button class="ib" type="button" onclick="closeProduct()" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <div class="pv-body" id="pvBody"></div>
 </div>
 
 <!-- ПОДБОР -->
 <div class="ov quiz" id="quiz" role="dialog" aria-modal="true" aria-label="Подбор аромата">
-  <div class="pv-bar"><button class="ib" type="button" onclick="quizBack()" aria-label="Назад"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><span>Подбор по характеру</span><button class="ib" type="button" onclick="closeQuiz()" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="pv-bar"><button class="ib" type="button" onclick="quizBack()" aria-label="Назад"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><a class="home-btn" href="#top" onclick="goHome();return false" aria-label="На главную"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10 19v-5h4v5"/></svg><span class="logo-w" data-t="name">BAKHUR</span></a><span>Подбор по характеру</span><button class="ib" type="button" onclick="closeQuiz()" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <div class="qz-prog"><i id="qzProg"></i></div>
   <div class="qz-body" id="qzBody"></div>
 </div>
@@ -265,9 +265,9 @@ var BAKHUR_BUILD='2026-10-30.4';
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/data.js?v=2026-10-30.4"></script>
-<script src="js/app.js?v=2026-10-30.4"></script>
-<script src="js/admin.js?v=2026-10-30.4"></script>
-<script src="js/cutout.js?v=2026-10-30.4"></script>
+<script src="js/data.js?v=2026-10-31.1"></script>
+<script src="js/app.js?v=2026-10-31.1"></script>
+<script src="js/admin.js?v=2026-10-31.1"></script>
+<script src="js/cutout.js?v=2026-10-31.1"></script>
 </body>
 </html>

@@ -851,3 +851,14 @@ img.cut{ filter:drop-shadow(var(--sx,0px) var(--sy,22px) 22px var(--btl)); }
 .hero-cta .btn,.pv-cta .btn{ min-height:52px; }
 @media (hover:none){ .card:hover{ transform:none; box-shadow:none; } .fam:hover b{ transform:none; } }
 @media (max-width:480px){ .adm-tabs{ padding:0 8px; justify-content:space-between; } .adm-tabs button{ padding:14px 7px; font-size:.84rem; } }
+
+/* кнопка «на главную» в досье и подборе: домик + название, как логотип в шапке */
+.pv-bar{ justify-content:flex-start; }
+.pv-bar>.ib:last-child{ margin-left:auto; }
+.pv-bar>span{ flex:1; text-align:center; }
+.home-btn{ display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 14px 0 10px; margin-left:2px; border-radius:var(--pill); border:1px solid var(--line); background:var(--sur); flex:none; transition:border-color .2s, transform .15s; }
+.home-btn:hover{ border-color:var(--red); }
+.home-btn:active{ transform:scale(.97); }
+.home-btn svg{ width:18px; height:18px; fill:none; stroke:var(--red-tx); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+.home-btn .logo-w{ font-size:.95rem; max-width:40vw; }
+@media (max-width:599px){ .pv-bar>span{ display:none; } }

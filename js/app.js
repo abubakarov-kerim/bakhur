@@ -174,6 +174,11 @@ function curtain(cb){
   c.className='in';
   setTimeout(()=>{ try{ cb(); }catch(e){ console.error(e); } c.className='out'; setTimeout(()=>{ c.className=''; curBusy=false; },760); },640);
 }
+/* кнопка с названием и домиком в досье и подборе: закрывает окно и ведёт на главный экран */
+function goHome(){
+  if(history.state&&history.state.ov) history.replaceState(null,'',location.pathname+location.search);
+  curtain(()=>{ hideOverlays(); window.scrollTo({top:0,behavior:'instant'}); });
+}
 function goSection(id){
   const go=()=>{ hideOverlays(); const el=document.getElementById(id); if(el){ const y=id==='top'?0:el.getBoundingClientRect().top+scrollY-($('#hdr').offsetHeight)+1; window.scrollTo({top:y,behavior:'instant'}); } };
   curtain(go); return false;
