@@ -203,10 +203,30 @@ function goSection(id){
 }
 
 /* ====== ТЕМА ====== */
-function toggleTheme(){
-  const t=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light';
-  curtain(()=>{ document.documentElement.setAttribute('data-theme',t); try{ localStorage.setItem('bakhur_theme',t); }catch(e){}
-    $('meta[name=theme-color]').setAttribute('content',t==='light'?'#F5F6F8':'#0E1120'); });
+/* смена темы: новая тема разливается кругом от кнопки по всему экрану (View Transitions);
+   где это не поддерживается, цвета плавно перетекают (класс theme-fade) */
+let themeBusy=false;
+function toggleTheme(e){
+  const root=document.documentElement, t=root.getAttribute('data-theme')==='light'?'dark':'light';
+  const apply=()=>{ root.setAttribute('data-theme',t); try{ localStorage.setItem('bakhur_theme',t); }catch(_){}
+    $('meta[name=theme-color]').setAttribute('content',t==='light'?'#F5F6F8':'#0E1120'); };
+  if(REDUCED){ apply(); return; }
+  if(themeBusy) return; themeBusy=true;
+  const done=()=>{ themeBusy=false; };
+  if(document.startViewTransition){
+    const b=e&&e.currentTarget&&e.currentTarget.getBoundingClientRect?e.currentTarget.getBoundingClientRect():null;
+    const x=b?b.left+b.width/2:innerWidth-40, y=b?b.top+b.height/2:30;
+    const r=Math.hypot(Math.max(x,innerWidth-x),Math.max(y,innerHeight-y));
+    const vt=document.startViewTransition(apply);
+    vt.ready.then(()=>{
+      root.animate({clipPath:[`circle(0px at ${x}px ${y}px)`,`circle(${r}px at ${x}px ${y}px)`]},
+        {duration:1000,easing:'cubic-bezier(.65,0,.35,1)',pseudoElement:'::view-transition-new(root)'});
+    }).catch(()=>{});
+    vt.finished.then(done,done);
+  } else {
+    root.classList.add('theme-fade'); apply();
+    setTimeout(()=>{ root.classList.remove('theme-fade'); done(); },800);
+  }
 }
 
 /* ====== ТЕКСТЫ И ВИД САЙТА (меняются в админке, вкладка «Сайт») ======

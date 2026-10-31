@@ -888,3 +888,9 @@ img.ph.ld,img.cut.ld,.imgs img,.pv-thumbs img,.hv-photo{ opacity:1; }
 @keyframes shimmer{ from{ background-position:120% 0; } to{ background-position:-120% 0; } }
 @media (prefers-reduced-motion:reduce){ img.ph,img.cut{ opacity:1; } .card-img:has(img:not(.ld))::after{ animation:none; } }
 @media (max-width:400px){ .adm-tabs{ padding:0 4px; } .adm-tabs button{ padding:14px 4px; font-size:.8rem; } }
+
+/* плавная смена темы */
+::view-transition-old(root),::view-transition-new(root){ animation:none; mix-blend-mode:normal; }
+::view-transition-new(root){ z-index:2; }
+.theme-fade,.theme-fade *,.theme-fade *::before,.theme-fade *::after{
+  transition:background-color .7s ease, color .7s ease, border-color .7s ease, fill .7s ease, stroke .7s ease, box-shadow .7s ease!important; }
